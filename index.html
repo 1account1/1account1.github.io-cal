@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS 스타일 계산기</title>
+    <style>
+        /* CSS 스타일링 */
+        body {
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none; /* 텍스트 선택 방지 */
+        }
+
+        .calculator {
+            width: 320px;
+            background-color: black;
+            padding: 20px;
+            border-radius: 40px;
+        }
+
+        .display {
+            color: white;
+            font-size: 75px;
+            text-align: right;
+            padding: 10px 20px;
+            font-weight: 300;
+            height: 120px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+            overflow: hidden;
+            letter-spacing: -2px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        .btn {
+            height: 72px;
+            width: 72px;
+            border-radius: 50%;
+            border: none;
+            font-size: 32px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: filter 0.1s;
+            outline: none;
+        }
+
+        /* 버튼 클릭 시 밝아지는 효과 */
+        .btn:active {
+            filter: brightness(1.4);
+        }
+
+        /* 색상 테마 */
+        .gray { background-color: #a5a5a5; color: black; font-size: 26px; }
+        .dark-gray { background-color: #333333; color: white; }
+        .orange { background-color: #ff9f0a; color: white; }
+
+        /* '0' 버튼 확장 */
+        .zero {
+            grid-column: span 2;
+            width: 158px;
+            border-radius: 40px;
+            justify-content: flex-start;
+            padding-left: 28px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+
+        <div class="buttons">
+            <button class="btn gray" onclick="clearDisplay()">AC</button>
+            <button class="btn gray" onclick="toggleSign()">+/-</button>
+            <button class="btn gray" onclick="percentage()">%</button>
+            <button class="btn orange" onclick="appendOperator('/')">÷</button>
+
+            <button class="btn dark-gray" onclick="appendNumber('7')">7</button>
+            <button class="btn dark-gray" onclick="appendNumber('8')">8</button>
+            <button class="btn dark-gray" onclick="appendNumber('9')">9</button>
+            <button class="btn orange" onclick="appendOperator('*')">×</button>
+
+            <button class="btn dark-gray" onclick="appendNumber('4')">4</button>
+            <button class="btn dark-gray" onclick="appendNumber('5')">5</button>
+            <button class="btn dark-gray" onclick="appendNumber('6')">6</button>
+            <button class="btn orange" onclick="appendOperator('-')">-</button>
+
+            <button class="btn dark-gray" onclick="appendNumber('1')">1</button>
+            <button class="btn dark-gray" onclick="appendNumber('2')">2</button>
+            <button class="btn dark-gray" onclick="appendNumber('3')">3</button>
+            <button class="btn orange" onclick="appendOperator('+')">+</button>
+
+            <button class="btn dark-gray zero" onclick="appendNumber('0')">0</button>
+            <button class="btn dark-gray" onclick="appendNumber('.')">.</button>
+            <button class="btn orange" onclick="calculate()">=</button>
+        </div>
+    </div>
+
+    <script>
+        /* 자바스크립트 로직 */
+        let displayValue = '0';
+        let firstOperand = null;
+        let waitingForSecondOperand = false;
+        let operator = null;
+
+        const display = document.getElementById('display');
+
+        function updateDisplay() {
+            // 숫자가 길어지면 폰트 크기 축소
+            if (displayValue.length > 6) {
+                display.style.fontSize = '45px';
+            } else {
+                display.style.fontSize = '75px';
+            }
+            display.innerText = displayValue;
+        }
+
+        function appendNumber(num) {
+            if (waitingForSecondOperand) {
+                displayValue = num;
+                waitingForSecondOperand = false;
+            } else {
+                displayValue = displayValue === '0' ? num : displayValue + num;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(nextOperator) {
+            const inputValue = parseFloat(displayValue);
+
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator;
+                return;
+            }
+
+            if (firstOperand === null) {
+                firstOperand = inputValue;
+            } else if (operator) {
+                const result = performCalculation(operator, firstOperand, inputValue);
+                displayValue = String(Number(result.toFixed(7)));
+                firstOperand = result;
+            }
+
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+            updateDisplay();
+        }
+
+        function performCalculation(op, n1, n2) {
+            if (op === '+') return n1 + n2;
+            if (op === '-') return n1 - n2;
+            if (op === '*') return n1 * n2;
+            if (op === '/') return n1 / n2;
+            return n2;
+        }
+
+        function calculate() {
+            if (operator === null || waitingForSecondOperand) return;
+            const inputValue = parseFloat(displayValue);
+            const result = performCalculation(operator, firstOperand, inputValue);
+            displayValue = String(Number(result.toFixed(7)));
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            displayValue = '0';
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            displayValue = String(parseFloat(displayValue) * -1);
+            updateDisplay();
+        }
+
+        function percentage() {
+            displayValue = String(parseFloat(displayValue) / 100);
+            updateDisplay();
+        }
+    </script>
+</body>
+</html>
